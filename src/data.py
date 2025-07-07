@@ -4,7 +4,7 @@ import torch.utils.data
 from pathlib import Path
 from torchvision import datasets, transforms
 import multiprocessing
-
+import torchvision.transforms as T
 from .helpers import compute_mean_and_std, get_data_location
 import matplotlib.pyplot as plt
 
@@ -46,14 +46,38 @@ def get_data_loaders(
     # HINT: resize the image to 256 first, then crop them to 224, then add the
     # appropriate transforms for that step
     data_transforms = {
-        "train": transforms.Compose(
-            # YOUR CODE HERE
+        "train": T.Compose(
+            [
+
+                T.Resize(256),
+                T.CenterCrop(224),
+                T.RandomHorizontalFlip(0.5),
+                # T.RandAugment(
+                #         num_ops=2,
+                #         magnitude=9,
+                #         interpolation=T.InterpolationMode.BILINEAR,
+                #     ),
+                T.ToTensor(),
+                T.Normalize(mean, std),
+            ]
+
         ),
-        "valid": transforms.Compose(
-            # YOUR CODE HERE
+        "valid": T.Compose(
+                [
+                T.Resize(256),
+                T.CenterCrop(224),
+                T.ToTensor(),
+                T.Normalize(mean, std),
+                ]
         ),
         "test": transforms.Compose(
-            # YOUR CODE HERE
+                [
+                    
+                T.Resize(256),
+                T.CenterCrop(224),
+                T.ToTensor(),
+                T.Normalize(mean, std),
+                ]
         ),
     }
 
@@ -62,6 +86,7 @@ def get_data_loaders(
         base_path / "train",
         # YOUR CODE HERE: add the appropriate transform that you defined in
         # the data_transforms dictionary
+         transform=data_transforms["train"]
     )
     # The validation dataset is a split from the train_one_epoch dataset, so we read
     # from the same folder, but we apply the transforms for validation
@@ -69,6 +94,7 @@ def get_data_loaders(
         base_path / "train",
         # YOUR CODE HERE: add the appropriate transform that you defined in
         # the data_transforms dictionary
+        transform=data_transforms["valid"]
     )
 
     # obtain training indices that will be used for validation
@@ -85,8 +111,7 @@ def get_data_loaders(
 
     # define samplers for obtaining training and validation batches
     train_sampler = torch.utils.data.SubsetRandomSampler(train_idx)
-    valid_sampler  = # YOUR CODE HERE
-
+    valid_sampler = torch.utils.data.SubsetRandomSampler(valid_idx)
     # prepare data loaders
     data_loaders["train"] = torch.utils.data.DataLoader(
         train_data,
@@ -95,13 +120,18 @@ def get_data_loaders(
         num_workers=num_workers,
     )
     data_loaders["valid"] = torch.utils.data.DataLoader(
-        # YOUR CODE HERE
+        valid_data,
+        batch_size=1,
+        sampler=valid_sampler,
+        num_workers=num_workers,
+        shuffle=False
     )
 
     # Now create the test data loader
     test_data = datasets.ImageFolder(
         base_path / "test",
         # YOUR CODE HERE (add the test transform)
+        transform=data_transforms["test"], 
     )
 
     if limit > 0:
@@ -112,6 +142,11 @@ def get_data_loaders(
 
     data_loaders["test"] = torch.utils.data.DataLoader(
         # YOUR CODE HERE (remember to add shuffle=False as well)
+        test_data, 
+        batch_size=batch_size, 
+        shuffle=False, 
+        num_workers=num_workers, 
+        sampler=test_sampler, 
     )
 
     return data_loaders
@@ -129,10 +164,10 @@ def visualize_one_batch(data_loaders, max_n: int = 5):
     # YOUR CODE HERE:
     # obtain one batch of training images
     # First obtain an iterator from the train dataloader
-    dataiter  = # YOUR CODE HERE
+    dataiter = iter(data_loaders['train'])
     # Then call the .next() method on the iterator you just
     # obtained
-    images, labels  = # YOUR CODE HERE
+    images, labels = next(dataiter)
 
     # Undo the normalization (for visualization purposes)
     mean, std = compute_mean_and_std()
@@ -147,7 +182,7 @@ def visualize_one_batch(data_loaders, max_n: int = 5):
 
     # YOUR CODE HERE:
     # Get class names from the train data loader
-    class_names  = # YOUR CODE HERE
+    class_names  = data_loaders['train'].dataset.classes
 
     # Convert from BGR (the format used by pytorch) to
     # RGB (the format expected by matplotlib)
