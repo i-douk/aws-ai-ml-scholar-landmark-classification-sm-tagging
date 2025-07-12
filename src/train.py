@@ -259,3 +259,4 @@ def test_one_epoch_test(data_loaders, optim_objects):
 
     tv = one_epoch_test(data_loaders["test"], model, loss)
     assert not np.isnan(tv), "Test loss is nan"
+

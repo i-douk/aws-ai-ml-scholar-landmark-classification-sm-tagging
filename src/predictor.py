@@ -108,3 +108,5 @@ def test_model_construction(data_loaders):
         out[0].sum(),
         torch.Tensor([1]).squeeze()
     ), "The output of the .forward method should be a softmax vector with sum = 1"
+
+

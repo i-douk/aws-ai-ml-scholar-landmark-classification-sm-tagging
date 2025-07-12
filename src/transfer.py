@@ -5,33 +5,46 @@ import torch.nn as nn
 
 
 def get_model_transfer_learning(model_name="resnet18", n_classes=50):
-
     # Get the requested architecture
     if hasattr(models, model_name):
-
         model_transfer = getattr(models, model_name)(pretrained=True)
-
     else:
-
         torchvision_major_minor = ".".join(torchvision.__version__.split(".")[:2])
+        raise ValueError(
+            f"Model {model_name} is not known. List of available models: "
+            f"https://pytorch.org/vision/{torchvision_major_minor}/models.html"
+        )
 
-        raise ValueError(f"Model {model_name} is not known. List of available models: "
-                         f"https://pytorch.org/vision/{torchvision_major_minor}/models.html")
+    # Get number of features from the original classifier
+    num_ftrs = model_transfer.fc.in_features
 
-    # Freeze all parameters in the model
-    # HINT: loop over all parameters. If "param" is one parameter,
-    # "param.requires_grad = False" freezes it
-    # YOUR CODE HERE
+    # Freeze all parameters
+    frozen_parameters = []
+    for p in model_transfer.parameters():
+        if p.requires_grad:
+            p.requires_grad = False
+            frozen_parameters.append(p)
+    print(f"Froze {len(frozen_parameters)} groups of parameters")
 
-    # Add the linear layer at the end with the appropriate number of classes
-    # 1. get numbers of features extracted by the backbone
-    num_ftrs  = # YOUR CODE HERE
+    # Replace the classifier head
+    model_transfer.fc = nn.Sequential(
+        nn.Linear(num_ftrs, 256),
+        nn.Dropout(p=0.5),
+        nn.BatchNorm1d(256),
+        nn.ReLU(),
+        nn.Linear(256, 128),
+        nn.Dropout(p=0.5),
+        nn.BatchNorm1d(128),
+        nn.ReLU(),
+        nn.Linear(128, n_classes),
+    )
 
-    # 2. Create a new linear layer with the appropriate number of inputs and
-    #    outputs
-    model_transfer.fc  = # YOUR CODE HERE
+    # Unfreeze the new classifier head
+    for p in model_transfer.fc.parameters():
+        p.requires_grad = True
 
     return model_transfer
+
 
 
 ######################################################################################

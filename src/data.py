@@ -52,11 +52,11 @@ def get_data_loaders(
                 T.Resize(256),
                 T.CenterCrop(224),
                 T.RandomHorizontalFlip(0.5),
-                # T.RandAugment(
-                #         num_ops=2,
-                #         magnitude=9,
-                #         interpolation=T.InterpolationMode.BILINEAR,
-                #     ),
+                T.RandAugment(
+                        num_ops=2,
+                        magnitude=9,
+                        interpolation=T.InterpolationMode.BILINEAR,
+                    ),
                 T.ToTensor(),
                 T.Normalize(mean, std),
             ]
